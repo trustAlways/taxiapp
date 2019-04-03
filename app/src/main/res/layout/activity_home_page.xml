@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    tools:context=".HomePage">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+     <android.support.v4.view.ViewPager
+         android:id="@+id/viewpager"
+         android:layout_width="match_parent"
+         android:layout_height="match_parent"
+         android:layout_above="@+id/view11">
+
+     </android.support.v4.view.ViewPager>
+
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:id="@+id/view11"
+            android:layout_centerInParent="true"
+            />
+
+        <LinearLayout
+            android:id="@+id/linear_indicator"
+            android:layout_below="@+id/view11"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:padding="@dimen/padding_size"
+            android:orientation="horizontal">
+
+
+        </LinearLayout>
+
+        <RelativeLayout
+            android:id="@+id/button_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_below="@+id/linear_indicator"
+            android:layout_marginLeft="@dimen/activity_horizontal_margin"
+            android:layout_marginRight="@dimen/activity_horizontal_margin"
+            android:layout_marginBottom="@dimen/activity_vertical_margin"
+            android:background="@color/design_fab_stroke_end_inner_color">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="@dimen/text_size"
+                android:fontFamily="sans-serif"
+                android:gravity="center"
+                android:padding="@dimen/drawable_size"
+                android:textColor="@color/black"
+                android:layout_above="@+id/sign-in-button"
+                android:layout_marginBottom="@dimen/size30"
+                android:text="@string/welcome_text"/>
+
+
+            <Button
+                android:id="@+id/sign-in-button"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/imagebutton_height"
+                android:layout_centerVertical="true"
+                android:background="@drawable/signup_button"
+                android:text="@string/action_sign_in_short"
+                android:textColor="@color/white"
+                android:textAllCaps="false"
+                android:textSize="@dimen/text_size"
+
+                />
+
+            <Button
+                android:id="@+id/sign-up-button"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/imagebutton_height"
+                android:layout_below="@id/sign-in-button"
+                android:layout_marginTop="@dimen/activity_vertical_margin"
+                android:background="@drawable/signin_button"
+                android:text="@string/action_sign_up_short"
+                android:textColor="@color/white"
+                android:textAllCaps="false"
+                android:textSize="@dimen/text_size"/>
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_below="@+id/sign-up-button"
+                android:padding="@dimen/padding_size"
+                android:gravity="center"
+                android:textSize="@dimen/text_size"
+                android:text="@string/action_sign_in"
+                android:textColor="@color/colorAccent"/>
+
+        </RelativeLayout>
+
+
+    </RelativeLayout>
+</android.support.constraint.ConstraintLayout>

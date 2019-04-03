@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+
+    <group android:checkableBehavior="single">
+
+        <item
+            android:id="@+id/myAccount"
+            android:icon="@drawable/ic_account_box_black_24dp"
+            android:title="My Account" />
+
+        <item
+            android:id="@+id/payment"
+            android:icon="@drawable/ic_payment_black_24dp"
+            android:title="Payment" />
+        <item
+            android:id="@+id/trips"
+            android:icon="@drawable/ic_directions_car_black_24dp"
+            android:title="Your Trips" />
+        <item
+            android:id="@+id/settings"
+            android:icon="@drawable/ic_menu_manage"
+            android:title="Settings" />
+        <item
+            android:id="@+id/help"
+            android:icon="@android:drawable/ic_menu_help"
+            android:title="Help" />
+    </group>
+
+    <item android:title="Communicate">
+        <menu>
+            <item
+                android:id="@+id/invite_friend"
+                android:icon="@drawable/ic_menu_share"
+                android:title="Invite friend" />
+            <item
+                android:id="@+id/logout"
+                android:icon="@drawable/ic_clear_black_24dp"
+                android:title="Logout" />
+        </menu>
+    </item>
+
+</menu>
