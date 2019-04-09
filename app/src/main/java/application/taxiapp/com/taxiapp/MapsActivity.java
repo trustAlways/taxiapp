@@ -8,13 +8,16 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.pm.PackageManager;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
@@ -32,6 +35,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
+import android.view.animation.Interpolator;
+import android.view.animation.LinearInterpolator;
 import android.widget.AutoCompleteTextView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -59,11 +64,15 @@ import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.Projection;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.UiSettings;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -116,10 +125,16 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     private LocationCallback mLocationCallback;
     private Location mCurrentLocation;
 
+    ArrayList<LatLng> latLong;
+    private List<Polyline> polylines;
+    private static final int[] COLORS = new int[]{R.color.primary_dark,R.color.primary,R.color.primary_light,
+            R.color.accent,R.color.primary_dark_material_light};
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
+
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN);
         setContentView(R.layout.activity_maps);
@@ -196,6 +211,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
     //fo rinitialization view--------------------
     private void initialization()
     {
+        latLong = new ArrayList<>();
         //textviews
         View headerView = navigationView.getHeaderView(0);
         username = (TextView)headerView.findViewById(R.id.user_name);
@@ -288,17 +304,15 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         mUiSettings.setTiltGesturesEnabled(true);
         mUiSettings.setRotateGesturesEnabled(true);
         // Add a marker in Sydney and move the camera
-        LatLng latlng = new LatLng(currentlat, currentlong);
+        final LatLng latlng = new LatLng(currentlat, currentlong);
         //currentMarker = mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in current city"));
         //mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latlng, 15));
-
         CameraPosition camPos = new CameraPosition.Builder()
                 .target(latlng)
                 .zoom(18)
-                .tilt(70)
                 .build();
         CameraUpdate camUpd3 = CameraUpdateFactory.newCameraPosition(camPos);
-        mMap.animateCamera(camUpd3);
+         mMap.animateCamera(camUpd3);
 
         //CameraUpdate cameraUpdate = CameraUpdateFactory.newLatLng(latlng);
         // CameraUpdate zoom=CameraUpdateFactory.zoomTo(15);
@@ -332,16 +346,59 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             layoutParams.setMargins(0, 0, 30, 30);
         }
 
-        DrawPath();
+
+        mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
+            @Override
+            public void onMapLongClick(LatLng latLng) {
+
+                //reset marker when already 2
+                if (latLong.size()==2)
+                {
+                    latLong.clear();
+                    mMap.clear();
+                }
+                //add marker points to the list
+                latLong.add(latLng);
+
+                //create marker
+                MarkerOptions markerOptions = new MarkerOptions();
+                markerOptions.position(latLng);
+
+                if (latLong.size()==1)
+                {
+                  //add first marker
+                  markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_GREEN));
+                }
+                else
+                {
+                    //add second marker to the map
+                    markerOptions.icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED));
+                }
+                mMap.addMarker(markerOptions);
+
+                //TODO : request direction code here
+                if (latLong.size()==2)
+                {
+                    DrawPath();
+
+                    System.out.println("origin === "+ latLong.get(0).latitude);
+                    System.out.println("destination === "+ latLong.get(1).longitude);
+                }
+
+            }
+        });
+
+
+
 
     }
 
     //--------------------------------------------------
     private void DrawPath()
     {
-        if (getIntent().getExtras() != null  && getIntent().getExtras().containsKey("rideDetails")) {
-            String intentData = getIntent().getExtras().getString("rideDetails");
-            System.out.println("intent data -- "+ intentData);
+        /*if (getIntent().getExtras() == null  && !getIntent().getExtras().containsKey("rideDetails")) {*/
+           // String intentData = getIntent().getExtras().getString("rideDetails");
+            //System.out.println("intent data -- "+ intentData);
 
             double current_lat = Double.parseDouble(pref.getData("latitude"));
             double current_long = Double.parseDouble(pref.getData("longitude"));
@@ -349,11 +406,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             double drop_lat = Double.parseDouble(pref.getData("drop_latitude"));
             double drop_long = Double.parseDouble(pref.getData("drop_longitude"));
 
-            origin = new LatLng(current_lat, current_long);
-            destination = new LatLng(drop_lat, drop_long);
+            origin = new LatLng(current_lat,current_long);
+            destination = new LatLng(drop_lat,drop_long);
 
-            System.out.println("origin === "+ origin);
-            System.out.println("destination === "+ destination);
+            System.out.println("origin === "+ latLong.get(0));
+            System.out.println("destination === "+ latLong.get(1));
 
            //EasyRouteCalculation easyRouteCalculation = new EasyRouteCalculation(this,mMap);
             //easyRouteCalculation.setLineColor(Color.RED);
@@ -365,52 +422,50 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
             //easyRouteCalculation.calculateRouteBetweenTwoPoints(origin,istanbul);
            // mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(istanbul,15));
 
-
             Routing routing = new Routing.Builder()
                     .travelMode(AbstractRouting.TravelMode.DRIVING)
                     .withListener(this)
                     .alternativeRoutes(true)
-                    .waypoints(origin, destination)
-                    .key("AIzaSyCq164ffXtxj9n6p10eFM9aZSiLN5lKQzs")
+                    .waypoints(latLong.get(0), latLong.get(1))
+                    .key("AIzaSyB9ABA5j5cxNW1kDb5PmGjWKjmkZ8SBvI0")
                     .build();
             routing.execute();
 
 
-           /* MarkerOptions options = new MarkerOptions();
-            options.position(origin);
-            options.position(istanbul);
+            MarkerOptions options = new MarkerOptions();
+            options.position(latLong.get(0));
+            options.position(latLong.get(1));
             mMap.addMarker(options);
 
-            String url = getMapsApiDirectionsUrl();
+            String url = getMapsApiDirectionsUrl(latLong.get(0),latLong.get(1));
             System.out.println("url "+ url);
             ReadTask downloadTask = new ReadTask();
             downloadTask.execute(url);
-*/
+
             mMap.moveCamera(CameraUpdateFactory.newLatLng(origin));
             //mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(origin,16));
 
             CameraPosition camPos = new CameraPosition.Builder()
-                    .target(destination)
+                    .target(origin)
                     .zoom(18)
-                    .tilt(30)
                     .build();
             CameraUpdate camUpd3 = CameraUpdateFactory.newCameraPosition(camPos);
             mMap.animateCamera(camUpd3);
 
-            addMarkers();
+            //addMarkers();
 
-        }
+
     }
 
-    private String getMapsApiDirectionsUrl() {
+    private String getMapsApiDirectionsUrl(LatLng latLng, LatLng lng) {
         String waypoints = "waypoints=optimize:true|"
-                + origin.latitude + "," + origin.longitude
-                + "|" + "|" +  destination.latitude + ","
-                + destination.longitude;
-        String OriDest = "origin="+origin.latitude+","+origin.longitude+"&destination="+destination.latitude+","+destination.longitude;
+                + latLng.latitude + "," + latLng.longitude
+                + "|" + "|" +  lng.latitude + ","
+                + lng.longitude;
+        String OriDest = "origin="+latLng.latitude+","+latLng.longitude+"&destination="+lng.latitude+","+lng.longitude;
 
         String sensor = "sensor=false";
-        String key = "key=AIzaSyDKkOzrw9q9-zu0ro99H-0GywgIs-_N_lk";
+        String key = "key=AIzaSyB9ABA5j5cxNW1kDb5PmGjWKjmkZ8SBvI0";
         String params = OriDest+"&%20"+waypoints + "&" + sensor +"&"+ key;
         String output = "json";
         String url = "https://maps.googleapis.com/maps/api/directions/"
@@ -447,8 +502,7 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         }
     }
 
-    private class ParserTask extends
-            AsyncTask<String, Integer, List<List<HashMap<String, String>>>> {
+    private class ParserTask extends AsyncTask<String, Integer, List<List<HashMap<String, String>>>> {
 
         @Override
         protected List<List<HashMap<String, String>>> doInBackground(
@@ -471,12 +525,11 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
         protected void onPostExecute(List<List<HashMap<String, String>>> routes) {
             ArrayList<LatLng> points = null;
             PolylineOptions polyLineOptions = null;
-
-            System.out.println("routes  "+ routes);
+            points = new ArrayList<LatLng>();
+            System.out.println("routes  " + routes);
 
             // traversing through routes
             for (int i = 0; i < routes.size(); i++) {
-                points = new ArrayList<LatLng>();
                 polyLineOptions = new PolylineOptions();
                 List<HashMap<String, String>> path = routes.get(i);
 
@@ -491,12 +544,57 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
                 }
 
                 polyLineOptions.addAll(points);
-                polyLineOptions.width(2);
+                polyLineOptions.width(5);
                 polyLineOptions.color(Color.BLUE);
             }
 
-            mMap.addPolyline(polyLineOptions);
-        }
+            if(points.size()!=0)
+            {
+                mMap.addPolyline(polyLineOptions);
+
+                Marker marker = mMap.addMarker(new MarkerOptions()
+                        .icon(BitmapDescriptorFactory.fromResource(R.drawable.droppin))
+                        .position(points.get(0))
+                        .flat(true));
+
+                add(mMap, marker, points, false);
+            }
+
+    }
+ }
+
+    private void add(GoogleMap mMap, final Marker marker, final ArrayList<LatLng> points, final boolean b)
+    {
+        final Handler handler = new Handler();
+        final long start = SystemClock.uptimeMillis();
+        Projection proj = mMap.getProjection();
+        final long duration = 30000;
+
+        final Interpolator interpolator = new LinearInterpolator();
+
+        handler.post(new Runnable() {
+            int i = 0;
+
+            @Override
+            public void run() {
+                long elapsed = SystemClock.uptimeMillis() - start;
+                float t = interpolator.getInterpolation((float) elapsed
+                        / duration);
+                if (i < points.size())
+                    marker.setPosition(points.get(i));
+                i++;
+                if (t < 1.0) {
+                    // Post again 16ms later.
+                    handler.postDelayed(this, 16);
+                } else {
+                    if (b) {
+                        marker.setVisible(false);
+                    } else {
+                        marker.setVisible(true);
+                    }
+                }
+            }
+        });
     }
 
     //-----------------------------------
@@ -829,16 +927,54 @@ public class MapsActivity extends FragmentActivity implements OnMapReadyCallback
 
     @Override
     public void onRoutingStart() {
-
+        Toast.makeText(this, "start roouting", Toast.LENGTH_SHORT).show();
     }
 
     @Override
-    public void onRoutingSuccess(ArrayList<Route> arrayList, int i) {
+    public void onRoutingSuccess(ArrayList<Route> route, int pos) {
+        Toast.makeText(this, "success roouting", Toast.LENGTH_SHORT).show();
+        polylines = new ArrayList<>();
 
+        if(polylines.size()>0) {
+            for (Polyline poly : polylines) {
+                poly.remove();
+            }
+        }
+
+        //add route(s) to the map.
+        for (int i = 0; i <route.size(); i++) {
+
+            //In case of more than 5 alternative routes
+            int colorIndex = i % COLORS.length;
+
+            PolylineOptions polyOptions = new PolylineOptions();
+            polyOptions.color(getResources().getColor(COLORS[colorIndex]));
+            polyOptions.width(10 + i * 3);
+            polyOptions.addAll(route.get(i).getPoints());
+            Polyline polyline = mMap.addPolyline(polyOptions);
+            polylines.add(polyline);
+
+            Toast.makeText(getApplicationContext(),"Route "+ (i+1) +": distance - "+ route.get(i).getDistanceValue()+": duration - "+ route.get(i).getDurationValue(),Toast.LENGTH_SHORT).show();
+
+        }
+
+        // Start marker
+        MarkerOptions options = new MarkerOptions();
+        options.position(latLong.get(0));
+        options.icon(BitmapDescriptorFactory.fromResource(R.drawable.droppin));
+        Marker marker = mMap.addMarker(options);
+
+        /*// End marker
+        options = new MarkerOptions();
+        options.position(end);
+        options.icon(BitmapDescriptorFactory.fromResource(R.drawable.end_green));
+        mMap.addMarker(options);*/
+        //add(mMap,marker,polylines,false);
     }
 
     @Override
     public void onRoutingCancelled() {
 
     }
+
 }
